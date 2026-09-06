@@ -97,26 +97,52 @@ The proposed architecture follows the modern **Orchestrator-Workers & Fast Route
 | **Synthesis Information Loss** | Kaya might compress or drop critical data points returned by sub-agents. | Require sub-agents to format outputs in typed JSON or standardized Markdown summaries before handoff. |
 | **Sub-Agent Cascading Failures** | If one parallel sub-agent throws an unhandled exception, it could break the whole graph run. | Wrap sub-agent node executions with try/except returning structured `{"error": "..."}` so Kaya can gracefully explain partial failures. |
 | **Semantic Cache In-Memory Storage** | `semantic_cache.py` currently stores embeddings in a Python list (`self.cache`), which resets on process restart. | Connect cache storage to Upstash Redis for multi-instance persistence. |
+-------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------
 
----
+## BRAIN 
 
-## 5. Comparison to 2025/2026 Industry Standards
+Integrations: The incoming data pipelines (OAuth / webhooks / API keys).
+Project Brain: The centralized, per-project searchable knowledge store (vector index + synced records).
+Kaya & Harry: The only two agents your users ever interact with. The Brain gives them superpowers.
 
-### Anthropic Guidelines (*"Building Effective Agents"*)
-- **Anthropic Recommendation:** *"Start with simple composable patterns (Prompt Chaining, Routers, and Orchestrator-Workers). Avoid autonomous peer-to-peer swarms for business-critical workflows because they are non-deterministic and difficult to debug."*
-- **Our Implementation:** Directly follows the **Router + Orchestrator-Workers** pattern. Sub-agents have deterministic tool sets and explicit reporting contracts.
+1. The Integrations Route (/integrations)
+Keep it strictly divided by persona. This tells the user exactly why they are connecting a tool.
+Layout:
+Header: "Connect your tools to empower your agents."
+Column 1: Kaya (PM Context)
+Notion (Specs & Docs)
+Slack (Decisions & Updates)
+Calendly (Availability)
+Jira/Linear (Only if migrating/legacy)
+Column 2: Harry (Dev Context)
+GitHub (Code & PRs)
+Vercel (Deployments)
+Sentry (Errors)
+Status Indicators:
+Green dot: Connected.
+Grey button: Connect.
+Crucial: Show "Last Synced: 2 mins ago" so they know the brain is alive.
 
-### OpenAI Guidelines (*"OpenAI Agents SDK & Swarm Guidelines"*)
-- **OpenAI Recommendation:** Treat **"Agents as Tools"** with centralized supervision. A single conversational manager maintains customer interaction while calling specialists as subroutines.
-- **Our Implementation:** Kaya functions as the conversational manager. Sub-agents do not take over the user session; they report back their findings to Kaya.
+2. The "Sub-Agent" (The Backend Logic)
+Do not show a "Sub-Agent" in the UI. The user should never have to talk to a second bot.
+Instead, build a Context Tool that Kaya uses silently.
+How it works:
+User asks Kaya: "Create a task for the new onboarding flow."
+Kaya's Internal Monologue (Invisible):
+Step 1: I need requirements. -> Call Notion Tool.
+Step 2: I need to know who is available. -> Call Calendly Tool.
+Step 3: I need to check if Harry is blocked on similar code. -> Call GitHub Tool.
+Kaya's Output: "I've created the task based on the Notion spec. I assigned it to you because your calendar is clear, and I added a note for Harry to check the existing auth.ts file in GitHub."
 
----
+3. The UI inside Kaya's Chat
+Since the brain is invisible, how does the user know it's working?
+Option A: Silent (Best for speed)
+Kaya just answers perfectly. The user assumes she is smart.
+Option B: "Thinking" State (Best for trust)
+When Kaya is processing, show small, fading text:
+Kaya is reading Notion docs...
+Kaya is checking GitHub PRs...
+Kaya is checking Sentry logs...
 
-## 6. Conclusion & Recommendation
 
-The proposed architecture is sound, secure, and ready for production assembly.
-
-**Next Immediate Steps:**
-1. Implement the sub-agent nodes (`AnalystAgent`, `DBWriteAgent`, `SprintAgent`) with `gpt-4.1-mini`.
-2. Wrap `route_user_request` into the LangGraph conditional fan-out edge.
-3. Wire the sub-agent responses back into the `Kaya` synthesis node and stream the final response to the user.
