@@ -97,6 +97,12 @@ The proposed architecture follows the modern **Orchestrator-Workers & Fast Route
 | **Synthesis Information Loss** | Kaya might compress or drop critical data points returned by sub-agents. | Require sub-agents to format outputs in typed JSON or standardized Markdown summaries before handoff. |
 | **Sub-Agent Cascading Failures** | If one parallel sub-agent throws an unhandled exception, it could break the whole graph run. | Wrap sub-agent node executions with try/except returning structured `{"error": "..."}` so Kaya can gracefully explain partial failures. |
 | **Semantic Cache In-Memory Storage** | `semantic_cache.py` currently stores embeddings in a Python list (`self.cache`), which resets on process restart. | Connect cache storage to Upstash Redis for multi-instance persistence. |
+
+
+Goals ->
+1. Each sub-agent can call tools in prallel never sequential.
+2. sub-agent should retunrn proper findings/result to kaya never half or broken.
+3. kaya should aware of the project details/deadline always.
 -------------------------------------------------------------------------------------
 -------------------------------------------------------------------------------------
 
