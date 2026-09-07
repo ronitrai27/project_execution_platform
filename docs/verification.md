@@ -156,3 +156,6 @@ Kaya is checking Sentry logs...
 ## Emitting Events
 When the supervisor router selects sub-agents (analyst, sprint, db_write), it emits reasoning, but does not emit structured events indicating that Kaya delegated to these sub-agents.
 Inside analyst_worker_node, sprint_worker_node, and db_write_worker_node, the sub-agents execute parallel functions (fetch_tasks_summary_async, fetch_issues_summary_async, fetch_sprint_insights_async, search_user_memory, etc.) without emitting tool execution stream events.
+
+======================================================================================
+
