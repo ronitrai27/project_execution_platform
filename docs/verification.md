@@ -59,6 +59,17 @@ The proposed architecture follows the modern **Orchestrator-Workers & Fast Route
 
 ---
 
+## new added 
+1. The 4 Subagents & Their Isolated Threads
+In state.py and kaya_graph.py, all 4 workers run with their own dedicated, isolated message buffers using smart reducers (RESET_SENTINEL):
+
+Sub-Agent	Node Name	Private State Channel	Responsibility
+1. Analyst	analyst_node	_analyst_messages	Read analytics: Standups, tasks, issues, team workloads, project timelines.
+2. DB Write	db_write_node	_db_write_messages	Mutations & memory: Mem0 search, calendar events, report scheduler, PRD item creation.
+3. Sprint	sprint_node	_sprint_messages	Sprint analytics, sprint velocity, sprint creation & backlog allocation.
+4. MCP Integrations	mcp_node	_mcp_messages	External SaaS apps: Slack, Calendly, Linear, Notion, etc.
+Each subagent runs in parallel fan-out without polluting the main conversation history or other workers' context. All 4 workers fan-in to the Kaya Synthesizer (kaya_synthesizer_node), which produces the final unified PM response.
+
 ## 2. Verification of Current Components
 
 | Component | File Path | Status | Verdict & Quality |
@@ -150,115 +161,4 @@ When Kaya is processing, show small, fading text:
 Kaya is reading Notion docs...
 Kaya is checking GitHub PRs...
 Kaya is checking Sentry logs...
-
-
-======================================================================================
-## Emitting Events
-When the supervisor router selects sub-agents (analyst, sprint, db_write), it emits reasoning, but does not emit structured events indicating that Kaya delegated to these sub-agents.
-Inside analyst_worker_node, sprint_worker_node, and db_write_worker_node, the sub-agents execute parallel functions (fetch_tasks_summary_async, fetch_issues_summary_async, fetch_sprint_insights_async, search_user_memory, etc.) without emitting tool execution stream events.
-
-======================================================================================
-
-## PARSING 
-Here is the clear architectural blueprint and ideation to answer your questions and completely resolve the confusion.
-
-Part 1. Untangling the Confusion: Which Agent Gets the Parsed Data?
-In your architecture, you have Kaya (Supervisor & Synthesizer) and 3 Specialized Sub-Agents:
-
-Analyst Sub-Agent (analyst_node): Read-only project health, tasks, issues, workloads, standups.
-DB Write Sub-Agent (db_write_node): State mutations, calendar events, report scheduler, and bulk task/issue creation.
-Sprint Sub-Agent (sprint_node): Sprint metrics, velocity, sprint planning.
-The Golden Rule:
-The parsed document is NOT locked to one agent. It lives in the Shared Context (SupervisorState)!
-
-                   [ User uploads PRD & types query ]
-                                   │
-                                   ▼
-                       [ Supervisor Router Node ]
-                      (Decides based on user prompt)
-                                   │
-         ┌─────────────────────────┼─────────────────────────┐
-         ▼                         ▼                         ▼
-  User Query:               User Query:               User Query:
-  "List tasks from PRD"     "Create tasks in project" "Plan sprint with these"
-  "Analyze PRD risks"       "Import tasks as issues"  "Allocate to next sprint"
-         │                         │                         │
-         ▼                         ▼                         ▼
-   ANALYST AGENT             DB WRITE AGENT             SPRINT AGENT
- (Reads parsed doc,        (Extracts tasks,          (Aligns tasks with
-  evaluates feasibility,    triggers HITL approval    capacity & sprint goals)
-  summarizes scope)         to write to Convex)              │
-         │                         │                         │
-         └─────────────────────────┼─────────────────────────┘
-                                   │
-                                   ▼
-                       [ Kaya Synthesizer Node ]
-                 (Presents findings & interactive HITL 
-                   task approval cards to the user)
-Detailed Breakdown:
-If user asks: "Create tasks from this file" or "Generate backlog from PRD"
-
-Routes to: DB Write Sub-Agent (db_write_node).
-Why: This is a state mutation. The DB Write agent has the bulk_create_tasks tool. It formats the parsed tasks into title, description, priority, and tags, then triggers the HITL (Human-in-the-Loop) Approval Card (bulkInsertTasks in Convex) so the user can review and approve them before they are committed to the database.
-If user asks: "List tasks in this doc", "Summarize requirements", or "Check if this PRD misses anything"
-
-Routes to: Analyst Sub-Agent (analyst_node).
-Why: This is read-only analysis. The Analyst agent examines the parsed document against existing project tasks and issues to detect duplicates, dependencies, or scope gaps.
-If user asks: "Create a sprint and put these tasks in it"
-
-Routes to: Sprint Sub-Agent + DB Write Sub-Agent in parallel!
-Why: The router initiates both: the Sprint agent plans velocity/dates, and DB Write stages the task creation.
-Kaya's Role:
-
-Kaya is the orchestrator and the only agent that speaks to the user. Kaya delivers the final message and embeds the interactive task review card in the chat drawer.
-Part 2. The "Parse Immediately on Upload" Pipeline (Zero-Wait UX)
-To achieve super fast and efficient execution, never wait for the user to press Enter. While the user is typing their prompt (which typically takes 4–10 seconds), parsing happens in the background.
-
-Time ──▶
-User:   [Selects File] ────────(types query: "Create high priority tasks...")─────▶ [Presses Enter]
-              │                                                                           │
-System: [Instant Upload & Parse] ────────▶ [Tasks Extracted & Cached] ───────────────────▶ [Instant Agent Execution!]
-        (Takes 1.5 - 2.5s in background)   (UI shows: "✓ 8 tasks detected")                (ZERO waiting time!)
-1. The Instant Upload Flow:
-User attaches file: An onChange triggers immediately.
-Instant UI Feedback: A sleek badge appears right above the input:
-📄 PRD_Sprint3.pdf — [⚡ Parsing...]
-Background Request: Frontend fires an API request (POST /api/parse-document) containing the file.
-Cache & Return:
-Backend parses the document into clean Markdown + candidate task items [{ title, description, priority }].
-Backend saves this in memory / Redis / temporary Convex doc storage keyed by file_id.
-Frontend gets { fileId, fileName, taskCount: 8, summary } and updates the pill badge to:
-📄 PRD_Sprint3.pdf — [✓ 8 tasks detected]
-User presses Enter:
-Message payload sends: { content: "Create tasks from this", file_id: "..." }.
-The LangGraph agent reads the pre-parsed tasks immediately from state with 0-second parsing delay.
-Part 3. Parser Choice: LlamaCloud vs. Gemini Flash vs. Hybrid
-You asked: “For extraction/parsing — LlamaCloud? I need super fast, efficient, best of best.”
-
-Here is the objective comparison for PRDs/SRS documents (typically 1–15 pages, text, bullet points, user stories, tables):
-
-Solution	Speed	Table / Layout Accuracy	Cost	Best For
-Gemini 2.0 Flash / 1.5 Flash (Direct Multimodal) 🏆	1.2 – 2.0s (Blazing)	Near Perfect (Natively understands document layout, fonts, diagrams)	Very cheap (~$0.001/doc)	Best Overall Speed + Semantic Extraction in one step.
-LlamaCloud / LlamaParse	3.0 – 6.5s (Queued Cloud API)	Best for complex financial/dense tables	Moderate (1,000 free pages/day, then paid)	Heavy multi-column PDFs with complex math/charts.
-Fast Local (PyMuPDF / pdfplumber / python-docx)	< 200ms (Instant)	Low on complex layouts, good on pure text	Free (Local CPU)	Simple digital PDFs or DOCX files with plain text.
-Recommended "Best of the Best" Strategy:
-Use Gemini 2.0 Flash as the primary extractor (or a 2-tier pipeline):
-
-Why Gemini Flash beats LlamaParse for PRDs/Tasks:
-LlamaParse is a 2-step process: (1) PDF ➔ Markdown via LlamaCloud (takes 4s) ➔ (2) LLM extracts tasks from Markdown (takes 2s). Total: ~6s.
-Gemini Flash is a 1-step process: Send the raw PDF bytes directly to Gemini 2.0 Flash with structured output schema (TaskExtractionSchema). It parses layout, extracts tasks, assigns priority, and generates descriptions in ~1.5 seconds flat!
-If the user uploads .docx or .doc:
-Use standard python-docx (takes 50 milliseconds locally) ➔ pass text to Flash.
-Part 4. End-to-End System Design
-Here is how all the pieces connect:
-
-Part 5. Summary Checklist
-Background Parsing: Start parsing in onChange of the file input immediately; don't wait for Enter.
-Parsing Engine: Use Gemini 2.0 Flash for direct PDF/Doc structured task extraction — it is 3x faster than LlamaCloud and extracts structured JSON tasks in a single pass.
-Agent Destination:
-Create / Add Tasks ➔ DB Write Sub-Agent (handles HITL + Convex mutations).
-Analyze / Review / Summarize ➔ Analyst Sub-Agent (read-only project analysis).
-Sprint Allocation ➔ Sprint Sub-Agent.
-User Presentation ➔ Kaya synthesizes the answer and displays the review card.
-1:49 AM
 
