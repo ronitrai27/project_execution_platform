@@ -162,3 +162,46 @@ Kaya is reading Notion docs...
 Kaya is checking GitHub PRs...
 Kaya is checking Sentry logs...
 
+==============================================================
+## ERRORS: 
+
+Here is exactly what was discovered from testing both your decrypted tokens against the real MCP servers:
+
+1. What Happened with Linear (401 Unauthorized)
+Decrypted Token: d62f9b0d-80b7-4c12-8ed1-1aefb3b2ba98...
+Response from https://mcp.linear.app/mcp:
+json
+{"error": "invalid_token", "error_description": "Invalid access token"}
+Root Cause: The Linear OAuth access token stored in Convex is expired or revoked. Linear rejected the connection with HTTP 401 before any tool could run.
+Fix: Linear needs to be reconnected in the Integrations tab to get a fresh access token.
+2. What Happened with Jira (Tool not found error)
+Decrypted Token: eyJraWQiOiJhdXRoLmF0... (Valid JWT)
+Response from https://mcp.atlassian.com/v2/mcp:
+Initial handshake was successful (HTTP 200).
+However, the code was trying to call tools named jira_list_issues or search_issues.
+Root Cause: The official Atlassian Rovo MCP server does not have a list_issues or search_issues tool.
+The real Atlassian MCP tool schema requires two steps:
+Call getAccessibleAtlassianResources to dynamically get your Atlassian cloudId (e56da97a-1da4-40fd-bed2-4c2663ef28e7).
+Call searchJiraIssuesUsingJql with:
+json
+{
+  "cloudId": "e56da97a-1da4-40fd-bed2-4c2663ef28e7",
+  "jql": "created >= -365d order by created DESC"
+}
+3. Proof: Live Data Successfully Fetched from Your Jira
+When tested with searchJiraIssuesUsingJql, the Atlassian MCP server returned your 13 actual Jira items:
+
+Key	Summary	Type	Status	Priority
+KAN-5	payment failed	Story	To Do	Medium
+KAN-4	client meet	Story	To Do	Medium
+SAM1-10	Finalize Documentation for the Project	Task	In Review	Normal
+KAN-3	Subtask 2.1	Subtask	To Do	Normal
+SAM1-9	Optimize Performance of the Application	Task	To Do	Normal
+SAM1-8	Develop Transaction History Feature	Task	To Do	Normal
+SAM1-7	Create Wallet Integration	Task	In Progress	Normal
+SAM1-6	Set Up Notifications for Users	Task	To Do	Normal
+SAM1-5	Post-Launch Review and Feedback Collection	Epic	Done	Normal
+SAM1-4	Prepare for Project Launch	Epic	To Do	Normal
+SAM1-3	Conduct User Testing for the Platform	Epic	In Progress	Normal
+SAM1-2	Implement Market Analysis Tools	Epic	In Review	Normal
+SAM1-1	Implement User Authentication	Epic	To Do	Normal
