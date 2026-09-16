@@ -165,43 +165,36 @@ Kaya is checking Sentry logs...
 ==============================================================
 ## ERRORS: 
 
-Here is exactly what was discovered from testing both your decrypted tokens against the real MCP servers:
+biggest issue 
 
-1. What Happened with Linear (401 Unauthorized)
-Decrypted Token: d62f9b0d-80b7-4c12-8ed1-1aefb3b2ba98...
-Response from https://mcp.linear.app/mcp:
-json
-{"error": "invalid_token", "error_description": "Invalid access token"}
-Root Cause: The Linear OAuth access token stored in Convex is expired or revoked. Linear rejected the connection with HTTP 401 before any tool could run.
-Fix: Linear needs to be reconnected in the Integrations tab to get a fresh access token.
-2. What Happened with Jira (Tool not found error)
-Decrypted Token: eyJraWQiOiJhdXRoLmF0... (Valid JWT)
-Response from https://mcp.atlassian.com/v2/mcp:
-Initial handshake was successful (HTTP 200).
-However, the code was trying to call tools named jira_list_issues or search_issues.
-Root Cause: The official Atlassian Rovo MCP server does not have a list_issues or search_issues tool.
-The real Atlassian MCP tool schema requires two steps:
-Call getAccessibleAtlassianResources to dynamically get your Atlassian cloudId (e56da97a-1da4-40fd-bed2-4c2663ef28e7).
-Call searchJiraIssuesUsingJql with:
-json
-{
-  "cloudId": "e56da97a-1da4-40fd-bed2-4c2663ef28e7",
-  "jql": "created >= -365d order by created DESC"
-}
-3. Proof: Live Data Successfully Fetched from Your Jira
-When tested with searchJiraIssuesUsingJql, the Atlassian MCP server returned your 13 actual Jira items:
+[ROUTER DECISION] Actions: ['direct_response'] | Reasoning: The user provided a brief affirmative response ('yes') without requesting any data, integration, or analysis. This qualifies as a simple conversational reply, so only the 'direct_response' action is needed.
+[custom_event] data={'agent_status': 'Kaya is reasoning...', 'reasoning': "The user provided a brief affirmative response ('yes') without requesting any data, integration, or analysis. This qualifies as a simple conversational reply, so only the 'direct_response' action is needed."}
+[custom_event] data={'agent_status': 'Kaya is typing...'}
+INFO:httpx2:HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+[custom_event] data={'status': 'completed', 'thread_id': '68289898-5356-4ee8-83b2-7371090972bb', 'agent': 'kaya'}
+---> i said to make tasks from linear jira - it showed and ask confirm 
+-> i said yes etc.......
+---> router didnt called any tool !!
+bro this is so fucked ! as router has no idea !
 
-Key	Summary	Type	Status	Priority
-KAN-5	payment failed	Story	To Do	Medium
-KAN-4	client meet	Story	To Do	Medium
-SAM1-10	Finalize Documentation for the Project	Task	In Review	Normal
-KAN-3	Subtask 2.1	Subtask	To Do	Normal
-SAM1-9	Optimize Performance of the Application	Task	To Do	Normal
-SAM1-8	Develop Transaction History Feature	Task	To Do	Normal
-SAM1-7	Create Wallet Integration	Task	In Progress	Normal
-SAM1-6	Set Up Notifications for Users	Task	To Do	Normal
-SAM1-5	Post-Launch Review and Feedback Collection	Epic	Done	Normal
-SAM1-4	Prepare for Project Launch	Epic	To Do	Normal
-SAM1-3	Conduct User Testing for the Platform	Epic	In Progress	Normal
-SAM1-2	Implement Market Analysis Tools	Epic	In Review	Normal
-SAM1-1	Implement User Authentication	Epic	To Do	Normal
+
+
+The biggest issue is the Synthesizer — not the router, not the sub-agents.
+
+The kaya_synthesizer_node receives sub-agent outputs as free-text Markdown, passes them to gpt-4.1-mini, and hopes the LLM doesn't hallucinate. In your session:
+
+Router over-dispatched: sent ["db_write", "mcp"] for a simple "create those 3" confirmation → MCP ran useless Jira searches
+db_write_node either crashed (the getStateDiff frontend bug) or the task extraction LLM silently failed (error swallowed with print())
+The synthesizer saw "user asked to create tasks" + "DB Write agent ran" in its context and fabricated that it was done — there's no structured receipt proving anything was actually written
+The bulk_create_tasks tool was never called because the HITL interrupt never fired (extraction failure or frontend crash prevented it).
+
+The fix priority:
+
+Structured mutation receipts in state (not free-text) so the synthesizer knows whether writes succeeded
+Don't co-dispatch MCP alongside db_write on confirmation flows
+Surface extraction failures loudly instead of swallowing them
+Review the full analysis and let me know if you'd like me to implement the fixes.
+
+
+Router Amnesia on Short Confirmations: When the agent asks for confirmation in text and you reply "yes go ahead", the Supervisor Router inspects only the isolated prompt "yes go ahead". Without context or active state, the router classifies it as casual chat (direct_response) and never calls the worker sub-agent.
+Double Confirmation Mismatch: The sub-agent was prompting for textual confirmation in chat messages instead of leveraging your HITL (Human-in-the-Loop) flow.
