@@ -146,3 +146,76 @@ Once connected, Kaya's `MCP Agent` automatically leverages these tools during ch
 - [ ] `SLACK_CLIENT_ID` and `SLACK_CLIENT_SECRET` saved in `client/.env.local`
 - [ ] "Connect" button in `/dashboard/.../integrations` successfully redirects and returns `?connected=slack`
 - [ ] Token safely encrypted in Convex `mcpConnections` table
+
+---
+
+# HubSpot MCP Integration Guide for WEKRAFT
+
+Like Slack, **HubSpot does not support Dynamic Client Registration (RFC 7591)**. When connecting directly with standard dynamic MCP discovery, HubSpot returns:
+> `Incompatible auth server: does not support dynamic client registration`
+
+To connect HubSpot, you must register a **HubSpot Developer App** and configure static OAuth credentials.
+
+---
+
+## 1. HubSpot App Setup (developers.hubspot.com)
+
+### Step 1: Create a HubSpot Developer Account & App
+1. Go to [developers.hubspot.com](https://developers.hubspot.com) and sign in.
+2. In your Developer Account, click **Apps** -> **Create App**.
+3. Set **App Name** to `WEKRAFT AI`.
+
+---
+
+### Step 2: Configure Redirect URLs
+1. Navigate to the **Auth** tab in your app settings.
+2. Under **Redirect URLs**, add:
+   - **Local Development**:
+     ```
+     https://<your-tunnel>.ngrok-free.app/api/integrations/hubspot/callback
+     ```
+   - **Production**:
+     ```
+     https://<your-domain>.com/api/integrations/hubspot/callback
+     ```
+
+---
+
+### Step 3: Configure Required Scopes
+In the **Auth** tab under **Scopes**, add the following read/write scopes:
+
+| Scope | Purpose |
+| :--- | :--- |
+| `crm.objects.contacts.read` | Access CRM contacts and leads |
+| `crm.objects.deals.read` | View pipeline deals and sales stages |
+| `crm.objects.companies.read` | Read company organization data |
+| `crm.objects.deals.write` | (Optional) Create or update deals via Kaya |
+
+---
+
+### Step 4: Get Client ID & Secret
+1. In the **Auth** tab, copy:
+   - **Client ID**
+   - **Client Secret**
+
+---
+
+## 2. Environment Variables (.env.local)
+
+Add to `client/.env.local`:
+
+```env
+# HubSpot OAuth Credentials
+HUBSPOT_CLIENT_ID="your_hubspot_client_id_here"
+HUBSPOT_CLIENT_SECRET="your_hubspot_client_secret_here"
+```
+
+---
+
+## 3. Supported Kaya MCP Tools for HubSpot
+
+Once connected, Kaya can query live HubSpot CRM data:
+- `hubspot_get_contact`
+- `hubspot_list_deals`
+- `hubspot_search_companies`
+- `hubspot_get_pipeline_stages`

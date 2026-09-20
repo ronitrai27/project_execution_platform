@@ -163,21 +163,14 @@ Kaya is checking GitHub PRs...
 Kaya is checking Sentry logs...
 
 ==============================================================
-## ERRORS: 
+## GOAL -> 
+wi wonder - does my agent can do this ?
+tell me linear issues / notifications and jira tasks 
 
-FO:httpx:HTTP Request: POST https://festive-hound-799.convex.site/bulkInsertTasks "HTTP/1.1 500 Internal Server Error"
-[CONVEX TOOL] ✗ Error requesting 'bulkInsertTasks': Server error '500 Internal Server Error' for url 'https://festive-hound-799.convex.site/bulkInsertTasks'
-For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
-[HITL WRITE RESULT] Convex bulkInsertTasks response: ❌ Failed to bulk create tasks: Server error '500 Internal Server Error' for url 'https://festive-hound-799.convex.site/bulkInsertTasks'
-For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
-[custom_event] data={'agent_status': 'Kaya is synthesizing executive PM insights...'}
-INFO:httpx2:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+now create the summary and create 1 single task to achive those. 
+and once task is added - sent alert on slack.
 
-======================================================================
-[KAYA FINAL PM SYNTHESIS RESPONSE]
-I attempted to create the tasks "task-101" and "task-102" and assign them to you, but the operation failed due to a server error (500 Internal Server Error). Only 2 tasks were created partially in the project, but the full bulk creation did not succeed.
+currently slack we havent configured , but does my agent can wait till task is aaded to b and then write message in slack ?
 
-Please try again later or let me know if you want me to retry creating these tasks individually.
-======================================================================
-
-[custom_event] data={'status': 'completed', 'thread_id': '3f9c35e1-a781-435a-af70-5a9ec38a00f3', 'agent': 'kaya'}
+its very good if this can happen - i dont know !
+just a guess
