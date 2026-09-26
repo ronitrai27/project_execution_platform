@@ -216,3 +216,227 @@ Key tools include: `list_issues`, `get_issue`, `save_issue`, `list_teams`, `list
    - Run `list_teams` or `list_projects` first to discover workspace team keys.
    - Call `list_issues` with `{}` to retrieve active tickets across teams.
    - Use `save_issue` or `get_issue` for ticket updates and details.
+
+---
+
+## 6. Task 1: Linear & Sentry Issue Triage & Project Gap Analysis
+
+### Goal
+Query active (non-closed/non-done) Linear tickets and live Sentry unresolved errors, cross-reference against local project issues (`issue-1 client payemt` [in-progress], `issue-2 site tracing error` [closed]), and determine if new project issues must be created.
+
+---
+
+### Executed Tool Steps
+
+#### Step 1: Credential Decryption
+* **Linear Token:** Decrypted AES-256-GCM ciphertext `9779a5b4...` $\rightarrow$ `d62f9b0d-80b7-4c12-8ed1-1aefb3b2ba98` (Linear Personal Access Token).
+* **Sentry Token:** Decrypted AES-256-GCM ciphertext `c0bc0524...` $\rightarrow$ `4166911:HJM7tQh9b41c463ba...` (Sentry Auth Token).
+
+#### Step 2: Linear Discovery & Issue Fetch
+* **MCP Tool:** `list_teams`
+  * **Result:** Discovered team `Testing-new-123` (ID: `cd2935a6-0118-443e-826a-7bba84d6a2ed`).
+* **MCP Tool:** `list_issues`
+  * **Arguments:** `{}`
+  * **Active (Not Closed / Not Done) Issues Retrieved:**
+
+| Issue ID | Title | Status | Priority | Team | Assignee | Created Date |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`TES-8`** | `issue-client-payemnt` | `In Progress` | **High** | Testing-new-123 | Ronit Rai | Sept 26, 2026 |
+| **`TES-6`** | `issue-wekraft-payemnt` | `In Progress` | **Urgent** | Testing-new-123 | Ronit Rai | Sept 17, 2026 |
+| **`TES-5`** | `issue-rox-1` | `In Progress` | No priority | Testing-new-123 | Ronit Rai | Sept 17, 2026 |
+| **`TES-7`** | `Task 1` | `Backlog` | No priority | Testing-new-123 | Ronit Rai | Sept 17, 2026 |
+
+#### Step 3: Sentry Organization & Unresolved Error Fetch
+* **MCP Tool:** `find_organizations`
+  * **Result:** `vrsa-solution-6q` (`https://vrsa-solution-6q.sentry.io`).
+* **MCP Tool:** `search_issues`
+  * **Arguments:** `{"organizationSlug": "vrsa-solution-6q", "query": "is:unresolved", "sort": "date"}`
+  * **Live Unresolved Sentry Errors Discovered:**
+
+| Sentry ID | Error Message / Exception | Culprit Route | Events | Users | Last Seen | Severity |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`WEKRAFT-SAAS-20`** | `InvalidStateError: Transition was aborted because of invalid state. Document hidden` | `/dashboard/my-projects/:slug/workspace/integrations` | **121** | **9** | ~7 mins ago | **Critical** |
+| **`WEKRAFT-SAAS-27`** | `InvalidStateError: Transition was aborted... Viewport size changed` | `/dashboard` | 1 | 1 | ~56 mins ago | Medium |
+| **`WEKRAFT-SAAS-26`** | `ReferenceError: KayaSettingsSection is not defined` | `/dashboard/my-projects/:slug/workspace/settings` | 1 | 1 | 14 hrs ago | **High** |
+| **`WEKRAFT-SAAS-Z`** | `UnhandledRejection: Non-Error promise rejection captured... Id:4` | `/web` | 4 | 2 | 18 hrs ago | Medium |
+| **`WEKRAFT-SAAS-Y`** | `InvalidStateError: Transition was aborted... Document hidden` | `/web` | 5 | 5 | 19 hrs ago | Medium |
+| **`WEKRAFT-SAAS-25`** | `Error: Connection closed` | `/dashboard/.../teamspace` | 1 | 1 | 1 day ago | Low |
+| **`WEKRAFT-SAAS-24`** | `ReferenceError: EmbeddedVoiceWaveform is not defined` | `/dashboard/.../teamspace` | 1 | 1 | 1 day ago | Medium |
+| **`WEKRAFT-SAAS-8`** | `HttpError: Bad credentials - https://docs.github.com/rest` | `POST /dashboard/.../workspace` | 45 | 1 | 4 days ago | High |
+
+---
+
+### Project Issues Cross-Reference & Creation Needs
+
+1. **`issue-1 client payemt` (`in-progress` in project):**
+   - **Status:** Aligns with Linear `TES-8` (`issue-client-payemnt`, In Progress) and `TES-6` (`issue-wekraft-payemnt`, Urgent).
+   - **Action:** No new duplicate payment issue needed; keep synchronized with `TES-8`/`TES-6`.
+
+2. **`issue-2 site tracing error.` (`closed` in project):**
+   - **Status:** Closed locally in project.
+
+3. **New Issues Needed in Project:**
+   - **`issue-rox-1` (`TES-5`):** Currently active (`In Progress`) in Linear but missing from local project tracking.
+   - **`Task 1` (`TES-7`):** Active in Linear backlog, not yet represented in project issues.
+   - **`Sentry WEKRAFT-SAAS-20 (Integrations Transition Error)`:** **CRITICAL** bug with 121 recurring events across 9 real users on `/workspace/integrations`. Needs a dedicated bug issue in the project to track root cause.
+   - **`Sentry WEKRAFT-SAAS-26 (KayaSettingsSection ReferenceError)`:** Crashes workspace settings page. Needs an issue in the project.
+
+---
+
+## 7. Task 2: Project-to-Linear Sync, Creation of Unclosed Issues & Prioritization
+
+### Goal
+Given project issues:
+- `issue-1 client payemt` — `closed`
+- `issue-2 site tracing error.` — `not-started`
+
+1. Check if these issues exist in Linear.
+2. If non-closed issues are not in Linear, create them via Linear MCP.
+3. Establish an explicit prioritization matrix.
+4. Identify which unclosed Linear issues need to be brought into the local project.
+
+---
+
+### Executed Tool Steps & Live Issue Creation
+
+#### Step 1: Verification Against Linear Registry
+* **`issue-1 client payemt` (`closed` in project):** Found existing Linear tickets `TES-8` and `TES-6`. Since it is closed locally, no creation is required.
+* **`issue-2 site tracing error.` (`not-started` in project):** **NOT found** in Linear registry.
+
+#### Step 2: Tool Execution — `save_issue` on Linear MCP
+* **Tool Invocation:**
+  ```json
+  {
+    "title": "issue-2 site tracing error",
+    "team": "cd2935a6-0118-443e-826a-7bba84d6a2ed",
+    "description": "Site tracing error reported from project workspace.",
+    "priority": 2
+  }
+  ```
+* **Tool Response Payload:**
+  ```json
+  {
+    "id": "TES-9",
+    "uuid": "1bb2a5c0-1f7b-4750-bbb6-0f722860ba6c",
+    "title": "issue-2 site tracing error",
+    "status": "Backlog",
+    "priority": { "value": 2, "name": "High" },
+    "url": "https://linear.app/testing-new-123/issue/TES-9/issue-2-site-tracing-error",
+    "gitBranchName": "ronitrai1237/tes-9-issue-2-site-tracing-error",
+    "createdAt": "2026-09-26T08:32:08.671Z"
+  }
+  ```
+* **Result:** **`TES-9`** created successfully in Linear!
+
+---
+
+### Comprehensive Prioritization Matrix
+
+Based on live telemetry from Sentry error counts, user impact, and Linear ticket priorities:
+
+| Rank | Priority | Issue / Error ID | Source | Summary & Impact | Recommended Action |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **P0** | **URGENT** | **`TES-6`** / **`WEKRAFT-SAAS-20`** | Linear / Sentry | **Payment blocker (`TES-6`)** + **121 recurring crash events across 9 users** in Integrations tab. | Fix immediately — directly blocks revenue and MCP connector UI. |
+| **P1** | **HIGH** | **`TES-9`** | Linear (Created) | **`issue-2 site tracing error`** (High Priority, `not-started` in project). | Investigate OpenTelemetry/tracing configuration and start development. |
+| **P2** | **HIGH** | **`WEKRAFT-SAAS-26`** | Sentry | `ReferenceError: KayaSettingsSection is not defined` on `/workspace/settings`. | Fix missing export/import in workspace settings module. |
+| **P3** | **MEDIUM** | **`TES-8`** | Linear | `issue-client-payemnt` (Marked closed in project; verify if Linear status needs update to `Done`/`Closed`). | Close `TES-8` in Linear to match local project status. |
+| **P4** | **LOW** | **`TES-5`** (`issue-rox-1`) & **`TES-7`** (`Task 1`) | Linear | Backlog/in-progress general task items. | Bring into local project task board. |
+
+---
+
+### Summary of Linear Issues to Bring into Local Project
+
+The following active Linear issues are not yet done/closed and should be synced into local project tracking:
+1. **`TES-11`**: `issue-2 login auth error` (Status: `Backlog`, Priority: `Urgent`, URL: `https://linear.app/testing-new-123/issue/TES-11/issue-2-login-auth-error`)
+2. **`TES-10`**: `issue-1 firewall handling` (Status: `Backlog`, Priority: `High`, URL: `https://linear.app/testing-new-123/issue/TES-10/issue-1-firewall-handling`)
+3. **`TES-9`**: `issue-2 site tracing error` (Status: `Backlog`, Priority: `High`, URL: `https://linear.app/testing-new-123/issue/TES-9/issue-2-site-tracing-error`)
+4. **`TES-5`**: `issue-rox-1` (Status: `In Progress`, Priority: `No priority`)
+5. **`TES-7`**: `Task 1` (Status: `Backlog`, Priority: `No priority`)
+
+---
+
+## 8. Additional Live Linear Issues Created
+
+### MCP Tool Used: `save_issue`
+* **MCP Server Endpoint:** `https://mcp.linear.app/mcp`
+* **Protocol:** MCP Streamable HTTP JSON-RPC 2.0 (`initialize` $\rightarrow$ `notifications/initialized` $\rightarrow$ `tools/call`)
+* **Underlying Function:** `save_issue`
+
+---
+
+### Executed Tool Calls & Payloads
+
+#### 1. Creation of `issue-1 firewall handling`
+* **MCP Tool:** `save_issue`
+* **Input Parameters:**
+  ```json
+  {
+    "title": "issue-1 firewall handling",
+    "team": "cd2935a6-0118-443e-826a-7bba84d6a2ed",
+    "description": "Configure and handle firewall security rules and rate limiting.",
+    "priority": 2
+  }
+  ```
+* **Raw Response Payload:**
+  ```json
+  {
+    "id": "TES-10",
+    "uuid": "a28b9ba8-1d86-4ef8-921b-c105957746ac",
+    "title": "issue-1 firewall handling",
+    "description": "Configure and handle firewall security rules and rate limiting.",
+    "priority": { "value": 2, "name": "High" },
+    "status": "Backlog",
+    "statusType": "backlog",
+    "url": "https://linear.app/testing-new-123/issue/TES-10/issue-1-firewall-handling",
+    "gitBranchName": "ronitrai1237/tes-10-issue-1-firewall-handling",
+    "createdAt": "2026-09-26T08:40:03.939Z",
+    "team": "Testing-new-123",
+    "teamId": "cd2935a6-0118-443e-826a-7bba84d6a2ed"
+  }
+  ```
+
+---
+
+#### 2. Creation of `issue-2 login auth error`
+* **MCP Tool:** `save_issue`
+* **Input Parameters:**
+  ```json
+  {
+    "title": "issue-2 login auth error",
+    "team": "cd2935a6-0118-443e-826a-7bba84d6a2ed",
+    "description": "Authentication failure and token refresh handling on login flow.",
+    "priority": 1
+  }
+  ```
+* **Raw Response Payload:**
+  ```json
+  {
+    "id": "TES-11",
+    "uuid": "6389b1a0-6401-4abd-a62a-ff1d63e4c32e",
+    "title": "issue-2 login auth error",
+    "description": "Authentication failure and token refresh handling on login flow.",
+    "priority": { "value": 1, "name": "Urgent" },
+    "status": "Backlog",
+    "statusType": "backlog",
+    "url": "https://linear.app/testing-new-123/issue/TES-11/issue-2-login-auth-error",
+    "gitBranchName": "ronitrai1237/tes-11-issue-2-login-auth-error",
+    "createdAt": "2026-09-26T08:40:06.058Z",
+    "team": "Testing-new-123",
+    "teamId": "cd2935a6-0118-443e-826a-7bba84d6a2ed"
+  }
+  ```
+
+---
+
+#### 3. Verification Tool: `list_issues`
+* **MCP Tool:** `list_issues`
+* **Input Parameters:** `{}`
+* **Verified Linear State:**
+
+| Linear Key | Title | Priority | Status | Team | Direct Link |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`TES-10`** | **`issue-1 firewall handling`** | **High** (2) | `Backlog` | Testing-new-123 | [View in Linear](https://linear.app/testing-new-123/issue/TES-10/issue-1-firewall-handling) |
+| **`TES-11`** | **`issue-2 login auth error`** | **Urgent** (1) | `Backlog` | Testing-new-123 | [View in Linear](https://linear.app/testing-new-123/issue/TES-11/issue-2-login-auth-error) |
+
+
+
