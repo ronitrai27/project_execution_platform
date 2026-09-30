@@ -438,5 +438,82 @@ The following active Linear issues are not yet done/closed and should be synced 
 | **`TES-10`** | **`issue-1 firewall handling`** | **High** (2) | `Backlog` | Testing-new-123 | [View in Linear](https://linear.app/testing-new-123/issue/TES-10/issue-1-firewall-handling) |
 | **`TES-11`** | **`issue-2 login auth error`** | **Urgent** (1) | `Backlog` | Testing-new-123 | [View in Linear](https://linear.app/testing-new-123/issue/TES-11/issue-2-login-auth-error) |
 
+---
+
+## 9. Live GitHub MCP Integration & Codebase Triage
+
+### Connected Repository Context
+* **Target Repository:** `ronitrai27/customer_agent_punjabi`
+* **Repository Owner:** `ronitrai27`
+* **Repository Name:** `customer_agent_punjabi`
+* **Default Branch:** `main`
+* **Primary Language:** TypeScript
+* **Direct Repository URL:** [https://github.com/ronitrai27/customer_agent_punjabi](https://github.com/ronitrai27/customer_agent_punjabi)
+* **Strict Scoping Constraint:** Kaya and GitHub MCP sub-agent are strictly bounded to this repository. All queries enforce `owner="ronitrai27"` and `repo="customer_agent_punjabi"`.
+
+---
+
+### Discovered Capabilities & Available GitHub MCP Actions
+
+| Action / Tool Name | Description & Capability | Target Parameters |
+| :--- | :--- | :--- |
+| **`github_get_repository`** | Fetches repository metadata, visibility, default branch, language, and open issue counts. | `{"owner": "ronitrai27", "repo": "customer_agent_punjabi"}` |
+| **`github_list_issues`** | Lists open and closed issues with author, labels, comment count, and status. | `{"owner": "ronitrai27", "repo": "customer_agent_punjabi", "state": "open"}` |
+| **`github_list_pull_requests`** | Retrieves active and merged pull requests, source/target branches, and review states. | `{"owner": "ronitrai27", "repo": "customer_agent_punjabi", "state": "all"}` |
+| **`github_list_commits`** | Fetches recent commit history, authors, SHAs, and commit messages. | `{"owner": "ronitrai27", "repo": "customer_agent_punjabi", "per_page": 10}` |
+| **`github_list_branches`** | Discovers all active branches and their latest commit references. | `{"owner": "ronitrai27", "repo": "customer_agent_punjabi"}` |
+| **`github_get_issue`** | Retrieves detailed description and discussion thread for a specific issue number. | `{"owner": "ronitrai27", "repo": "customer_agent_punjabi", "issue_number": 18}` |
+| **`github_get_pull_request`** | Inspects diff, mergeability, reviews, and CI status of a pull request. | `{"owner": "ronitrai27", "repo": "customer_agent_punjabi", "pull_number": 16}` |
+
+---
+
+### Live Inspection Results & Observations
+
+#### 1. Open Issues in Connected Repository (Total: 2 Open Issues)
+
+| Issue # | Title | Author | State | Created At | Comments | Direct Link |
+| :---: | :--- | :--- | :---: | :--- | :---: | :--- |
+| **`#18`** | **`punjabi conversion is little hard.`** | `@ronitrai27` | `open` | 2026-09-30 17:00 UTC | 0 | [View Issue #18](https://github.com/ronitrai27/customer_agent_punjabi/issues/18) |
+| **`#17`** | **`model router - no past message history`** | `@ronitrai27` | `open` | 2026-09-30 16:59 UTC | 0 | [View Issue #17](https://github.com/ronitrai27/customer_agent_punjabi/issues/17) |
+
+> **Key Takeaway for Project Management:** Both issues were recently reported. Issue `#17` relates to model router memory/context, and Issue `#18` relates to language translation pipeline. Kaya can automatically ingest these issues into the project sprint backlog or link them with internal tasks.
+
+---
+
+#### 2. Recent Pull Requests
+
+| PR # | Title / Feature | Author | State | Source Branch $\rightarrow$ Base | Merged | Direct Link |
+| :---: | :--- | :--- | :---: | :--- | :---: | :--- |
+| **`#16`** | `code asynced and latency reduced.` | `@ronitrai27` | `closed` | `prd_fixes_agent` $\rightarrow$ `main` | **Yes** | [View PR #16](https://github.com/ronitrai27/customer_agent_punjabi/pull/16) |
+| **`#15`** | `Prd fixes agent` | `@ronitrai27` | `closed` | `prd_fixes_agent` $\rightarrow$ `main` | **Yes** | [View PR #15](https://github.com/ronitrai27/customer_agent_punjabi/pull/15) |
+| **`#14`** | `V2 agent` | `@ronitrai27` | `closed` | `v2_agent` $\rightarrow$ `main` | **Yes** | [View PR #14](https://github.com/ronitrai27/customer_agent_punjabi/pull/14) |
+| **`#13`** | `Agent updates` | `@ronitrai27` | `closed` | `agent-updates` $\rightarrow$ `main` | **Yes** | [View PR #13](https://github.com/ronitrai27/customer_agent_punjabi/pull/13) |
+| **`#12`** | `Agent updates` | `@ronitrai27` | `closed` | `agent-updates` $\rightarrow$ `main` | **Yes** | [View PR #12](https://github.com/ronitrai27/customer_agent_punjabi/pull/12) |
+| **`#11`** | `Dev` | `@ronitrai27` | `closed` | `dev` $\rightarrow$ `main` | **Yes** | [View PR #11](https://github.com/ronitrai27/customer_agent_punjabi/pull/11) |
+
+---
+
+#### 3. Recent Commit Activity
+
+| Commit SHA | Commit Message | Author | Timestamp | Direct Commit Link |
+| :---: | :--- | :--- | :--- | :--- |
+| **`1396958`** | `Merge pull request #16 from ronitrai27/prd_fixes_agent` | ROX | 2026-09-02 | [Commit `1396958`](https://github.com/ronitrai27/customer_agent_punjabi/commit/139695875611a54b9d7ecfbc5ab2fad11b758036) |
+| **`7c4dce1`** | `code asynced and latency reduced.` | ronirai27 | 2026-09-02 | [Commit `7c4dce1`](https://github.com/ronitrai27/customer_agent_punjabi/commit/7c4dce17dd5aac67b41ffca69de4468399e7b906) |
+| **`38ee9f7`** | `Merge pull request #15 from ronitrai27/prd_fixes_agent` | ROX | 2026-08-31 | [Commit `38ee9f7`](https://github.com/ronitrai27/customer_agent_punjabi/commit/38ee9f7c0f8d617fbd1bf631284bd2c229eb8daf) |
+| **`c7e54bb`** | `readme fixes....` | ronirai27 | 2026-08-31 | [Commit `c7e54bb`](https://github.com/ronitrai27/customer_agent_punjabi/commit/c7e54bb3cd6ed87e844d3ff5106f856904a67a4e) |
+| **`376d13b`** | `api keys updated..` | ronirai27 | 2026-08-20 | [Commit `376d13b`](https://github.com/ronitrai27/customer_agent_punjabi/commit/376d13bd4d4e2b48327df0a8cc63c9ec89ac4842) |
+
+---
+
+#### 4. Active Repository Branches
+
+* **`main`** (Default — Head: `1396958`)
+* **`agent-updates`** (Head: `cf35de4`)
+* **`dev`** (Head: `31965b0`)
+* **`guard`** (Head: `2c4f90f`)
+* **`prd_fixes_agent`** (Head: `7c4dce1`)
+* **`v2_agent`** (Head: `cd540d9`)
+
+
 
 

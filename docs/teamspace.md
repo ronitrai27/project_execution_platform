@@ -134,6 +134,36 @@ z.object({
 
 ---
 
-## 🔮 Phase 2: Advanced Subagent Tools (Coming Next)
+## 🔮 Phase 2: Advanced Tools (Built)
 
-mlti-agent .
+### 4️⃣ Tool 4: `summarizeChannelAndFollowUps` (Channel Recap & Action Items)
+
+#### Goal:
+Kaya reads the last 24 hours of channel messages (max 50, top-level only, human messages only) and produces a structured summary with key discussion topics and actionable follow-ups.
+
+#### Guards & Limits:
+- **Time window**: Messages from the last **24 hours** only
+- **Message cap**: Max **50 messages** per request
+- **Per-message cap**: Each message text capped at **500 characters** before sending to LLM
+- **Excluded**: Kaya/Harry agent messages, thread replies (top-level only)
+- **Rate limit**: Shares existing 6 req/min per project
+
+#### Trigger Phrases:
+- *"@kaya summarize the chats"*
+- *"@kaya what did we discuss today?"*
+- *"@kaya give me follow ups"*
+- *"@kaya recap this channel"*
+
+#### Output Format:
+```
+📋 Channel Summary (last 24h — {N} messages)
+
+🗣️ Discussion Topics:
+- Topic 1 ...
+- Topic 2 ...
+
+✅ Action Items / Follow-ups:
+- Alex → Fix payment webhook edge case
+- Dave → Investigate Sentry 500 on checkout
+- All → Confirm attendance for Friday sprint review
+```
