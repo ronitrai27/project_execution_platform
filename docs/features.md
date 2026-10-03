@@ -344,4 +344,15 @@ we need to design in such a way that nothing makes too complicated.
 we will also use gpt-5-mini model with reasoning- low for this , so that we have a better model handling these tool call. 
 ----------------------------
 
+hey last thing i wonder is !!
+as router provides reasoning ?
+our mcp agent is also gpt-5-mini it will also provide reasoning !!
 
+so currently only showing router reasoning on ui and stale until , agent strats replying - looks agent has reason only which sub agent to call !
+but when mcp work is there and mcp agent is invoked its again gpt-5-mini which can provide reasoning for his work 
+
+so we can extract and then shw that  chnaging router reeasoning !!
+same with analysist agent which is also gpt-5-mini 
+thid makes user know agent is reasoning and doing 
+
+i know small thing but 
