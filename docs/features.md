@@ -292,3 +292,56 @@ Semantic Long-Term Memory	Vector Memory over Decisions & Retros	Allows Kaya to r
 Async Task Delegation	Background Worker Queue (Celery / Convex Queues)	Handles long-running multi-repo analyses or large PRD ingestions without HTTP timeouts.
 Deterministic Guardrail Layer	Pre/Post-Flight Sanitizers	Scrub secrets, API tokens, internal IDs, and jailbreak vectors outside the LLM context.
 Bi-Directional State Sync	Two-Way Webhook Ingestion	Kaya proactively notifies teams when a Jira ticket moves or a Sentry incident exceeds thresholds without waiting for a user query.
+
+
+
+=========================================================================
+## ISSUES 
+
+# FIRST 
+Why MCP is Being Called Spuriously (The Exact Culprit)
+In 
+
+kaya_graph.py
+(Lines 251–257)
+, there is a hardcoded Python override running after the Router LLM finishes:
+
+python
+mcp_keywords = ["jira", "linear", "slack", "calendly", "notion", "hubspot", "sentry", "vercel", "github", "pr", "prs", "pull request", "repo", "repository", "codebase", "branch", "commit", "mcp", "integration", "integrations"]
+has_mcp_kw = any(k in lower_latest for k in mcp_keywords)
+if has_mcp_kw:
+    if "mcp" not in decision.actions:
+        decision.actions.append("mcp")  # 💥 Overrides the Router LLM completely!
+Why this wastes tokens & breaks routing:
+Common English words trigger MCP: Words like "repo", "codebase", "branch", "commit", and "integration" are in mcp_keywords. If a user asks:
+"What tasks are in this repository?" ➔ repo matches ➔ MCP worker is forced to run.
+"Who is assigned to the auth branch task?" ➔ branch matches ➔ MCP worker is forced to run.
+Blind to Negations:
+"Summarize our project without touching Jira" ➔ jira matches ➔ MCP worker runs anyway, ignoring the user's explicit instruction.
+No Integration Check:
+Even if your project has zero MCP apps connected, the keyword match still spins up the MCP sub-agent loop and makes unnecessary HTTP calls.
+
+
+=========================
+
+great !!
+now lets improve analysist agent !
+add the get sprint insights to analysist sub agent and tell him , only call when u required sprint related data only . !!
+
+second Tool get project health -> very very important -> 
+get all stale tasks / stale issues( stale means overdue is coming) 
+blocked tasks (isBlocked true) 
+not assigned tasks and issues. 
+Issues that are still not opened.
+sprints that are overdue and not yet completed.
+Github PR that are still not merged.  (only if repo is connected to project)
+Github issues still open.
+Team velocity (number of task/issue completed , left and team workload balance).
+
+now this tool is important and agent calls when only he needs a detailed project info 
+blockers , and what is holding project back.
+we need to design in such a way that nothing makes too complicated.
+we will also use gpt-5-mini model with reasoning- low for this , so that we have a better model handling these tool call. 
+----------------------------
+
+
